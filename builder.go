@@ -2,10 +2,9 @@
 // Use of this source code is governed by a MIT
 // license that can be found in the LICENSE file.
 
-package gobuild
+package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -25,14 +24,6 @@ type builder struct {
 	appCmd    *exec.Cmd // appName 的命令行包装引用，方便结束其进程。
 	appArgs   []string  // 传递给 appCmd 的参数
 	goCmdArgs []string  // 传递给 go build 的参数
-	logs      chan *Log
-}
-
-func (b *builder) log(typ int8, msg ...interface{}) {
-	b.logs <- &Log{
-		Type:    typ,
-		Message: fmt.Sprint(msg...),
-	}
 }
 
 // 确定文件 path 是否属于被忽略的格式。
@@ -55,17 +46,17 @@ func (b *builder) isIgnore(path string) bool {
 
 // 开始编译代码
 func (b *builder) build() {
-	b.log(LogTypeInfo, "编译代码...")
+	info.Println("编译代码...")
 
 	goCmd := exec.Command("go", b.goCmdArgs...)
 	goCmd.Stderr = os.Stderr
 	goCmd.Stdout = os.Stdout
 	if err := goCmd.Run(); err != nil {
-		b.log(LogTypeError, "编译失败:", err)
+		erro.Println("编译失败:", err)
 		return
 	}
 
-	b.log(LogTypeSuccess, "编译成功!")
+	succ.Println("编译成功!")
 
 	b.restart()
 }
@@ -74,26 +65,26 @@ func (b *builder) build() {
 func (b *builder) restart() {
 	defer func() {
 		if err := recover(); err != nil {
-			b.log(LogTypeError, "restart.defer:", err)
+			erro.Println("restart.defer:", err)
 		}
 	}()
 
 	// kill process
 	if b.appCmd != nil && b.appCmd.Process != nil {
-		b.log(LogTypeInfo, "中止旧进程:", b.appName)
+		info.Println("中止旧进程:", b.appName)
 		if err := b.appCmd.Process.Kill(); err != nil {
-			b.log(LogTypeError, "kill:", err)
+			erro.Println("kill:", err)
 		}
-		b.log(LogTypeSuccess, "旧进程被终止!")
+		succ.Println("旧进程被终止!")
 	}
 
-	b.log(LogTypeInfo, "启动新进程:", b.appName)
+	info.Println("启动新进程:", b.appName)
 	b.appCmd = exec.Command(b.appName, b.appArgs...)
 	b.appCmd.Dir = filepath.Dir(b.appName) // 确定程序的工作目录
 	b.appCmd.Stderr = os.Stderr
 	b.appCmd.Stdout = os.Stdout
 	if err := b.appCmd.Start(); err != nil {
-		b.log(LogTypeError, "启动进程时出错:", err)
+		erro.Println("启动进程时出错:", err)
 	}
 }
 
@@ -105,7 +96,7 @@ func (b *builder) filterPaths(paths []string) []string {
 	for _, dir := range paths {
 		fs, err := ioutil.ReadDir(dir)
 		if err != nil {
-			b.log(LogTypeError, err)
+			erro.Println(err)
 			continue
 		}
 
@@ -128,7 +119,7 @@ func (b *builder) filterPaths(paths []string) []string {
 }
 
 func (b *builder) initWatcher(paths []string) (*fsnotify.Watcher, error) {
-	b.log(LogTypeInfo, "初始化监视器...")
+	info.Println("初始化监视器...")
 
 	// 初始化监视器
 	watcher, err := fsnotify.NewWatcher()
@@ -138,9 +129,9 @@ func (b *builder) initWatcher(paths []string) (*fsnotify.Watcher, error) {
 
 	paths = b.filterPaths(paths)
 
-	b.log(LogTypeInfo, "以下路径或是文件将被监视:")
+	info.Println("以下路径或是文件将被监视:")
 	for _, path := range paths {
-		b.log(LogTypeInfo, path)
+		info.Println(path)
 	}
 
 	for _, path := range paths {
@@ -161,27 +152,27 @@ func (b *builder) watch(watcher *fsnotify.Watcher) {
 			select {
 			case event := <-watcher.Events:
 				if event.Op&fsnotify.Chmod == fsnotify.Chmod {
-					b.log(LogTypeIgnore, "watcher.Events:忽略 CHMOD 事件:", event)
+					ignore.Println("watcher.Events:忽略 CHMOD 事件:", event)
 					continue
 				}
 
 				if b.isIgnore(event.Name) { // 不需要监视的扩展名
-					b.log(LogTypeIgnore, "watcher.Events:忽略不被监视的文件:", event)
+					ignore.Println("watcher.Events:忽略不被监视的文件:", event)
 					continue
 				}
 
 				if time.Now().Sub(buildTime) <= watcherFrequency { // 已经记录
-					b.log(LogTypeIgnore, "watcher.Events:该监控事件被忽略:", event)
+					ignore.Println("watcher.Events:该监控事件被忽略:", event)
 					continue
 				}
 
 				buildTime = time.Now()
-				b.log(LogTypeInfo, "watcher.Events:触发编译事件:", event)
+				info.Println("watcher.Events:触发编译事件:", event)
 
 				go b.build()
 			case err := <-watcher.Errors:
 				watcher.Close()
-				b.log(LogTypeWarn, "watcher.Errors", err)
+				warn.Println("watcher.Errors", err)
 			} // end select
 		}
 	}()

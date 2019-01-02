@@ -1,6 +1,7 @@
 gobuild [![Build Status](https://travis-ci.org/caixw/gobuild.svg?branch=master)](https://travis-ci.org/caixw/gobuild)
 [![Go version](https://img.shields.io/badge/Go-1.4-brightgreen.svg?style=flat)](https://golang.org) 
 ======
+fork from https://github.com/caixw/gobuild just for easy go get 
 
 gobuild 是一个简单的 Go 代码热编译工具。
 会实时监控指定目录下的文件变化(重命名，删除，创建，添加)，并编译和运行程序。
@@ -46,7 +47,7 @@ dependents:
 ### 安装
 
 ```shell
-go get github.com/caixw/gobuild
+go get github.com/penggy/gobuild
 ```
 
 

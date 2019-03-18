@@ -1,0 +1,31 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "Cu0pg0LzhfvZ9HODeUsz/xchzik=",
+			"path": "github.com/issue9/term/ansi",
+			"revision": "8e3264191861397a3b9e7addb8aff0340002f978",
+			"revisionTime": "2018-12-21T15:03:32Z"
+		},
+		{
+			"checksumSHA1": "W04EjZi3f8P9b1pjI2x8t3WuXvI=",
+			"path": "github.com/issue9/term/colors",
+			"revision": "8e3264191861397a3b9e7addb8aff0340002f978",
+			"revisionTime": "2018-12-21T15:03:32Z"
+		},
+		{
+			"checksumSHA1": "eN5/8hSUqH0fYPyLwxMeLfPxslk=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "66b7b1311ac80bbafcd2daeef9a5e6e2cd1e2399",
+			"revisionTime": "2018-11-07T12:45:52Z"
+		},
+		{
+			"checksumSHA1": "VFnzvYWJ/kkdY025+7YGdPJfA3k=",
+			"path": "gopkg.in/fsnotify.v1",
+			"revision": "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9",
+			"revisionTime": "2018-01-10T05:33:47Z"
+		}
+	],
+	"rootPath": "github.com/penggy/gobuild"
+}

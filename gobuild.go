@@ -17,8 +17,10 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/issue9/term/colors"
+	"github.com/penggy/go-cache"
 )
 
 // 当前程序的主要版本号
@@ -47,6 +49,7 @@ func init() {
 func main() {
 	var showHelp, showVersion, recursive, showIgnoreLog bool
 	var mainFiles, outputName, extString, appArgs string
+	var delaySeconds uint
 
 	flag.BoolVar(&showHelp, "h", false, "显示帮助信息；")
 	flag.BoolVar(&showVersion, "v", false, "显示版本号；")
@@ -56,6 +59,7 @@ func main() {
 	flag.StringVar(&appArgs, "x", "", "传递给编译程序的参数；")
 	flag.StringVar(&extString, "ext", "go", "指定监视的文件扩展，区分大小写。* 表示监视所有类型文件，空值代表不监视任何文件；")
 	flag.StringVar(&mainFiles, "main", "", "指定需要编译的文件；")
+	flag.UintVar(&delaySeconds, "d", 2, "延时编译时间秒")
 	flag.Usage = usage
 	flag.Parse()
 
@@ -92,6 +96,7 @@ func main() {
 		appName:   getAppName(outputName, wd),
 		appArgs:   splitArgs(appArgs),
 		goCmdArgs: args,
+		cache:     cache.New(time.Duration(delaySeconds)*time.Second, time.Second),
 	}
 
 	w, err := b.initWatcher(recursivePaths(recursive, append(flag.Args(), wd)))
@@ -102,7 +107,7 @@ func main() {
 	defer w.Close()
 
 	b.watch(w)
-	go b.build()
+	b.triggerDelayBuild()
 
 	<-make(chan bool)
 }

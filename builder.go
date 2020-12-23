@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/penggy/go-cache"
 	"gopkg.in/fsnotify.v1"
 )
 
@@ -19,11 +20,12 @@ import (
 const watcherFrequency = 1 * time.Second
 
 type builder struct {
-	exts      []string  // 需要监视的文件扩展名
-	appName   string    // 输出的程序文件
-	appCmd    *exec.Cmd // appName 的命令行包装引用，方便结束其进程。
-	appArgs   []string  // 传递给 appCmd 的参数
-	goCmdArgs []string  // 传递给 go build 的参数
+	exts      []string     // 需要监视的文件扩展名
+	appName   string       // 输出的程序文件
+	appCmd    *exec.Cmd    // appName 的命令行包装引用，方便结束其进程。
+	appArgs   []string     // 传递给 appCmd 的参数
+	goCmdArgs []string     // 传递给 go build 的参数
+	cache     *cache.Cache // appName <-> appName
 }
 
 // 确定文件 path 是否属于被忽略的格式。
@@ -129,10 +131,10 @@ func (b *builder) initWatcher(paths []string) (*fsnotify.Watcher, error) {
 
 	paths = b.filterPaths(paths)
 
-	info.Println("以下路径或是文件将被监视:")
-	for _, path := range paths {
-		info.Println(path)
-	}
+	// info.Println("以下路径或是文件将被监视:")
+	// for _, path := range paths {
+	// 	info.Println(path)
+	// }
 
 	for _, path := range paths {
 		if err := watcher.Add(path); err != nil {
@@ -141,7 +143,15 @@ func (b *builder) initWatcher(paths []string) (*fsnotify.Watcher, error) {
 		}
 	}
 
+	b.cache.OnEvicted(func(k string, v interface{}) {
+		go b.build()
+	})
+
 	return watcher, nil
+}
+
+func (b *builder) triggerDelayBuild() {
+	b.cache.SetDefault(b.appName, b.appName)
 }
 
 // 开始监视 paths 中指定的目录或文件。
@@ -169,7 +179,8 @@ func (b *builder) watch(watcher *fsnotify.Watcher) {
 				buildTime = time.Now()
 				info.Println("watcher.Events:触发编译事件:", event)
 
-				go b.build()
+				// go b.build()
+				b.triggerDelayBuild()
 			case err := <-watcher.Errors:
 				watcher.Close()
 				warn.Println("watcher.Errors", err)

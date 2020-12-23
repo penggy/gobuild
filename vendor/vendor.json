@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "PsckE3Hjg6PaynsRS+y66TJn4uk=",
+			"path": "github.com/issue9/assert",
+			"revision": "3ef2bac2d6dee811b63dd85d1c8f31c225316e63",
+			"revisionTime": "2020-09-12T15:50:40Z"
+		},
+		{
 			"checksumSHA1": "Cu0pg0LzhfvZ9HODeUsz/xchzik=",
 			"path": "github.com/issue9/term/ansi",
 			"revision": "8e3264191861397a3b9e7addb8aff0340002f978",
@@ -13,6 +19,12 @@
 			"path": "github.com/issue9/term/colors",
 			"revision": "8e3264191861397a3b9e7addb8aff0340002f978",
 			"revisionTime": "2018-12-21T15:03:32Z"
+		},
+		{
+			"checksumSHA1": "ayOItB2bpyc0ypoZQrErkg8p3LE=",
+			"path": "github.com/penggy/go-cache",
+			"revision": "5633e0862627c011927fa39556acae8b1f1df58a",
+			"revisionTime": "2018-08-15T05:31:27Z"
 		},
 		{
 			"checksumSHA1": "eN5/8hSUqH0fYPyLwxMeLfPxslk=",

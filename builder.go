@@ -157,6 +157,7 @@ func (b *builder) triggerBuild() {
 	if b.cache != nil {
 		b.cache.SetDefault(b.appName, b.appName)
 	} else {
+		b.buildTime = time.Now()
 		go b.build()
 	}
 }

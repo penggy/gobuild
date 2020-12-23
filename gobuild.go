@@ -49,7 +49,7 @@ func init() {
 func main() {
 	var showHelp, showVersion, recursive, showIgnoreLog bool
 	var mainFiles, outputName, extString, appArgs string
-	var delaySeconds uint
+	var delaySeconds, coolingSeconds uint
 
 	flag.BoolVar(&showHelp, "h", false, "显示帮助信息；")
 	flag.BoolVar(&showVersion, "v", false, "显示版本号；")
@@ -59,7 +59,8 @@ func main() {
 	flag.StringVar(&appArgs, "x", "", "传递给编译程序的参数；")
 	flag.StringVar(&extString, "ext", "go", "指定监视的文件扩展，区分大小写。* 表示监视所有类型文件，空值代表不监视任何文件；")
 	flag.StringVar(&mainFiles, "main", "", "指定需要编译的文件；")
-	flag.UintVar(&delaySeconds, "d", 2, "延时编译时间秒")
+	flag.UintVar(&delaySeconds, "delay", 2, "延时编译时间（秒）")
+	flag.UintVar(&coolingSeconds, "cooling", 5, "编译冷却期时间（秒），冷却期内不监视文件变动")
 	flag.Usage = usage
 	flag.Parse()
 
@@ -72,7 +73,6 @@ func main() {
 
 		if len(commitHash) > 0 {
 			fmt.Fprintln(os.Stdout, "commitHash:", commitHash)
-
 		}
 		return
 	case showIgnoreLog:
@@ -91,25 +91,30 @@ func main() {
 		args = append(args, mainFiles)
 	}
 
-	b := &builder{
-		exts:      getExts(extString),
-		appName:   getAppName(outputName, wd),
-		appArgs:   splitArgs(appArgs),
-		goCmdArgs: args,
-		cache:     cache.New(time.Duration(delaySeconds)*time.Second, time.Second),
+	for {
+		b := &builder{
+			exts:           getExts(extString),
+			appName:        getAppName(outputName, wd),
+			appArgs:        splitArgs(appArgs),
+			goCmdArgs:      args,
+			delaySeconds:   delaySeconds,
+			coolingSeconds: coolingSeconds,
+		}
+		if b.delaySeconds > 0 {
+			b.cache = cache.New(time.Duration(delaySeconds)*time.Second, time.Second)
+			b.cache.OnEvicted(func(k string, v interface{}) {
+				go b.build()
+			})
+		}
+		if err := b.initWatcher(recursivePaths(recursive, append(flag.Args(), wd))); err != nil {
+			erro.Println(err)
+			return
+		}
+		b.triggerBuild()
+		b.wg.Add(1)
+		go b.watch()
+		b.wg.Wait()
 	}
-
-	w, err := b.initWatcher(recursivePaths(recursive, append(flag.Args(), wd)))
-	if err != nil {
-		erro.Println(err)
-		return
-	}
-	defer w.Close()
-
-	b.watch(w)
-	b.triggerDelayBuild()
-
-	<-make(chan bool)
 }
 
 func splitArgs(args string) []string {
@@ -179,7 +184,7 @@ func usage() {
 
 NOTE: 不会监视隐藏文件和隐藏目录下的文件。
 
-源代码采用 MIT 开源许可证，并发布于 https://github.com/caixw/gobuild`)
+源代码采用 MIT 开源许可证，并发布于 https://github.com/penggy/gobuild`)
 }
 
 // 根据 recursive 值确定是否递归查找 paths 每个目录下的子目录。

@@ -10,22 +10,25 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/penggy/go-cache"
 	"gopkg.in/fsnotify.v1"
 )
 
-// 监视器的更新频率，只有文件更新的时长超过此值，才会被更新
-const watcherFrequency = 1 * time.Second
-
 type builder struct {
-	exts      []string     // 需要监视的文件扩展名
-	appName   string       // 输出的程序文件
-	appCmd    *exec.Cmd    // appName 的命令行包装引用，方便结束其进程。
-	appArgs   []string     // 传递给 appCmd 的参数
-	goCmdArgs []string     // 传递给 go build 的参数
-	cache     *cache.Cache // appName <-> appName
+	exts           []string  // 需要监视的文件扩展名
+	appName        string    // 输出的程序文件
+	appCmd         *exec.Cmd // appName 的命令行包装引用，方便结束其进程。
+	appArgs        []string  // 传递给 appCmd 的参数
+	goCmdArgs      []string  // 传递给 go build 的参数
+	delaySeconds   uint
+	coolingSeconds uint
+	cache          *cache.Cache // appName <-> appName
+	watcher        *fsnotify.Watcher
+	buildTime      time.Time
+	wg             sync.WaitGroup
 }
 
 // 确定文件 path 是否属于被忽略的格式。
@@ -48,19 +51,22 @@ func (b *builder) isIgnore(path string) bool {
 
 // 开始编译代码
 func (b *builder) build() {
+	b.buildTime = time.Now()
 	info.Println("编译代码...")
 
 	goCmd := exec.Command("go", b.goCmdArgs...)
 	goCmd.Stderr = os.Stderr
 	goCmd.Stdout = os.Stdout
 	if err := goCmd.Run(); err != nil {
+		b.buildTime = time.Now()
 		erro.Println("编译失败:", err)
 		return
 	}
-
+	b.buildTime = time.Now()
 	succ.Println("编译成功!")
 
 	b.restart()
+	b.buildTime = time.Now()
 }
 
 // 重启被编译的程序
@@ -120,13 +126,13 @@ func (b *builder) filterPaths(paths []string) []string {
 	return ret
 }
 
-func (b *builder) initWatcher(paths []string) (*fsnotify.Watcher, error) {
+func (b *builder) initWatcher(paths []string) (err error) {
 	info.Println("初始化监视器...")
 
 	// 初始化监视器
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	paths = b.filterPaths(paths)
@@ -137,54 +143,54 @@ func (b *builder) initWatcher(paths []string) (*fsnotify.Watcher, error) {
 	// }
 
 	for _, path := range paths {
-		if err := watcher.Add(path); err != nil {
+		err = watcher.Add(path)
+		if err != nil {
 			watcher.Close()
-			return nil, err
+			return
 		}
 	}
-
-	b.cache.OnEvicted(func(k string, v interface{}) {
-		go b.build()
-	})
-
-	return watcher, nil
+	b.watcher = watcher
+	return
 }
 
-func (b *builder) triggerDelayBuild() {
-	b.cache.SetDefault(b.appName, b.appName)
+func (b *builder) triggerBuild() {
+	if b.cache != nil {
+		b.cache.SetDefault(b.appName, b.appName)
+	} else {
+		go b.build()
+	}
 }
 
 // 开始监视 paths 中指定的目录或文件。
-func (b *builder) watch(watcher *fsnotify.Watcher) {
-	go func() {
-		var buildTime time.Time
-		for {
-			select {
-			case event := <-watcher.Events:
-				if event.Op&fsnotify.Chmod == fsnotify.Chmod {
-					ignore.Println("watcher.Events:忽略 CHMOD 事件:", event)
-					continue
-				}
+func (b *builder) watch() {
+	defer b.wg.Done()
+	defer b.watcher.Close()
+	for {
+		select {
+		case event := <-b.watcher.Events:
+			if event.Op&fsnotify.Chmod == fsnotify.Chmod {
+				ignore.Println("watcher.Events:忽略 CHMOD 事件:", event)
+				continue
+			}
 
-				if b.isIgnore(event.Name) { // 不需要监视的扩展名
-					ignore.Println("watcher.Events:忽略不被监视的文件:", event)
-					continue
-				}
+			if b.isIgnore(event.Name) { // 不需要监视的扩展名
+				ignore.Println("watcher.Events:忽略不被监视的文件:", event)
+				continue
+			}
 
-				if time.Now().Sub(buildTime) <= watcherFrequency { // 已经记录
-					ignore.Println("watcher.Events:该监控事件被忽略:", event)
-					continue
-				}
+			if time.Since(b.buildTime) <= time.Duration(b.coolingSeconds)*time.Second { // 冷却期
+				ignore.Println("watcher.Events:该监控事件被忽略:", event)
+				continue
+			}
 
-				buildTime = time.Now()
-				info.Println("watcher.Events:触发编译事件:", event)
+			info.Println("watcher.Events:触发编译事件:", event)
 
-				// go b.build()
-				b.triggerDelayBuild()
-			case err := <-watcher.Errors:
-				watcher.Close()
-				warn.Println("watcher.Errors", err)
-			} // end select
-		}
-	}()
+			// go b.build()
+			b.triggerBuild()
+		case err := <-b.watcher.Errors:
+			// watcher.Close()
+			warn.Println("watcher.Errors", err)
+			return
+		} // end select
+	}
 }

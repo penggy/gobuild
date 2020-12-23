@@ -183,6 +183,11 @@ func (b *builder) watch() {
 				continue
 			}
 
+			if b.cache != nil && b.cache.ItemCount() > 0 { // 事件已存在
+				ignore.Println("watcher.Events:该监控事件被忽略:", event)
+				continue
+			}
+
 			info.Println("watcher.Events:触发编译事件:", event)
 
 			// go b.build()

@@ -202,14 +202,14 @@ func recursivePaths(recursive, vendor, test bool, paths []string) []string {
 			erro.Println("在遍历监视目录时，发生以下错误:", err)
 		}
 
-		if fi.IsDir() && strings.Index(path, "/.") < 0 {
-			ret = append(ret, path)
-		}
 		if fi.IsDir() && !vendor && fi.Name() == "vendor" {
 			return filepath.SkipDir
 		}
 		if fi.IsDir() && !test && fi.Name() == "test" {
 			return filepath.SkipDir
+		}
+		if fi.IsDir() && strings.Index(path, "/.") < 0 {
+			ret = append(ret, path)
 		}
 		return nil
 	}

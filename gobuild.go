@@ -47,7 +47,7 @@ func init() {
 }
 
 func main() {
-	var showHelp, showVersion, recursive, vendor, showIgnoreLog bool
+	var showHelp, showVersion, recursive, vendor, test, showIgnoreLog bool
 	var mainFiles, outputName, extString, appArgs string
 	var delaySeconds, coolingSeconds uint
 
@@ -55,6 +55,7 @@ func main() {
 	flag.BoolVar(&showVersion, "v", false, "显示版本号；")
 	flag.BoolVar(&recursive, "r", true, "是否查找子目录；")
 	flag.BoolVar(&vendor, "vendor", false, "是否监视 vendor 子目录；")
+	flag.BoolVar(&test, "test", false, "是否监视 test 子目录；")
 	flag.BoolVar(&showIgnoreLog, "i", false, "是否显示被标记为 IGNORE 的日志内容；")
 	flag.StringVar(&outputName, "o", "", "指定输出名称，程序的工作目录随之改变；")
 	flag.StringVar(&appArgs, "x", "", "传递给编译程序的参数；")
@@ -107,7 +108,7 @@ func main() {
 				go b.build()
 			})
 		}
-		if err := b.initWatcher(recursivePaths(recursive, vendor, append(flag.Args(), wd))); err != nil {
+		if err := b.initWatcher(recursivePaths(recursive, vendor, test, append(flag.Args(), wd))); err != nil {
 			erro.Println(err)
 			return
 		}
@@ -189,7 +190,7 @@ NOTE: 不会监视隐藏文件和隐藏目录下的文件。
 }
 
 // 根据 recursive 值确定是否递归查找 paths 每个目录下的子目录。
-func recursivePaths(recursive, vendor bool, paths []string) []string {
+func recursivePaths(recursive, vendor, test bool, paths []string) []string {
 	if !recursive {
 		return paths
 	}
@@ -205,6 +206,9 @@ func recursivePaths(recursive, vendor bool, paths []string) []string {
 			ret = append(ret, path)
 		}
 		if fi.IsDir() && !vendor && fi.Name() == "vendor" {
+			return filepath.SkipDir
+		}
+		if fi.IsDir() && !test && fi.Name() == "test" {
 			return filepath.SkipDir
 		}
 		return nil

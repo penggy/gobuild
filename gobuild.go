@@ -48,7 +48,7 @@ func init() {
 
 func main() {
 	var showHelp, showVersion, recursive, vendor, test, showIgnoreLog bool
-	var mainFiles, outputName, extString, appArgs string
+	var mainFiles, outputName, extString, appArgs, tags, ldflags string
 	var delaySeconds, coolingSeconds uint
 
 	flag.BoolVar(&showHelp, "h", false, "显示帮助信息；")
@@ -63,6 +63,8 @@ func main() {
 	flag.StringVar(&mainFiles, "main", "", "指定需要编译的文件；")
 	flag.UintVar(&delaySeconds, "delay", 2, "延时编译时间（秒）")
 	flag.UintVar(&coolingSeconds, "cooling", 5, "编译冷却期时间（秒），冷却期内不监视文件变动")
+	flag.StringVar(&tags, "tags", "", "go build tags")
+	flag.StringVar(&ldflags, "ldflags", "", "go build ldflags")
 	flag.Usage = usage
 	flag.Parse()
 
@@ -89,6 +91,12 @@ func main() {
 
 	// 初始化 goCmd 的参数
 	args := []string{"build", "-o", outputName}
+	if len(tags) > 0 {
+		args = append(args, "-tags", tags)
+	}
+	if len(ldflags) > 0 {
+		args = append(args, "-ldflags", ldflags)
+	}
 	if len(mainFiles) > 0 {
 		args = append(args, mainFiles)
 	}
@@ -148,7 +156,7 @@ func splitArgs(args string) []string {
 	} // end for
 
 	if start < len(args) {
-		ret = append(ret, args[start:len(args)])
+		ret = append(ret, args[start:])
 	}
 
 	info.Println("给程序传递了以下参数：", ret)

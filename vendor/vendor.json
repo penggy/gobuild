@@ -3,6 +3,18 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "ilqkCLpuMO9rxFcTijS7GS0G/7w=",
+			"path": "github.com/fsnotify/fsnotify",
+			"revision": "c1467c02fba575afdb5f4201072ab8403bbf00f4",
+			"revisionTime": "2024-05-16T15:12:59Z"
+		},
+		{
+			"checksumSHA1": "KTzKOEzG1jyRw5Xhl9w0Oag4uec=",
+			"path": "github.com/fsnotify/fsnotify/internal",
+			"revision": "c1467c02fba575afdb5f4201072ab8403bbf00f4",
+			"revisionTime": "2024-05-16T15:12:59Z"
+		},
+		{
 			"checksumSHA1": "PsckE3Hjg6PaynsRS+y66TJn4uk=",
 			"path": "github.com/issue9/assert",
 			"revision": "3ef2bac2d6dee811b63dd85d1c8f31c225316e63",
@@ -27,16 +39,22 @@
 			"revisionTime": "2018-08-15T05:31:27Z"
 		},
 		{
-			"checksumSHA1": "eN5/8hSUqH0fYPyLwxMeLfPxslk=",
-			"path": "golang.org/x/sys/unix",
-			"revision": "66b7b1311ac80bbafcd2daeef9a5e6e2cd1e2399",
-			"revisionTime": "2018-11-07T12:45:52Z"
+			"checksumSHA1": "Ld0iviZSRGAKK6WSoti+3++1RmY=",
+			"path": "golang.org/x/sys/internal/unsafeheader",
+			"revision": "f75cf1eec38b84b5cea42a93335150a532c7c75e",
+			"revisionTime": "2022-06-27T18:16:01Z"
 		},
 		{
-			"checksumSHA1": "VFnzvYWJ/kkdY025+7YGdPJfA3k=",
-			"path": "gopkg.in/fsnotify.v1",
-			"revision": "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9",
-			"revisionTime": "2018-01-10T05:33:47Z"
+			"checksumSHA1": "Qq9HY9ttuoEULxUc8zRFsUX6QUc=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "f75cf1eec38b84b5cea42a93335150a532c7c75e",
+			"revisionTime": "2022-06-27T18:16:01Z"
+		},
+		{
+			"checksumSHA1": "vYdeBiFkh3nb6R6q3JfdNYW87Kc=",
+			"path": "golang.org/x/sys/windows",
+			"revision": "f75cf1eec38b84b5cea42a93335150a532c7c75e",
+			"revisionTime": "2022-06-27T18:16:01Z"
 		}
 	],
 	"rootPath": "github.com/penggy/gobuild"

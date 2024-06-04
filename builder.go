@@ -5,7 +5,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,8 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/penggy/go-cache"
-	"gopkg.in/fsnotify.v1"
 )
 
 type builder struct {
@@ -102,7 +101,7 @@ func (b *builder) filterPaths(paths []string) []string {
 	ret := make([]string, 0, len(paths))
 
 	for _, dir := range paths {
-		fs, err := ioutil.ReadDir(dir)
+		fs, err := os.ReadDir(dir)
 		if err != nil {
 			erro.Println(err)
 			continue

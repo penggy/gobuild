@@ -6,7 +6,6 @@ package main
 
 import (
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -18,7 +17,7 @@ var (
 	info   = log.New(&logWriter{out: os.Stdout, color: colors.Blue, prefix: "[INFO]"}, "", log.Ltime)
 	warn   = log.New(&logWriter{out: os.Stderr, color: colors.Magenta, prefix: "[WARN]"}, "", log.Ltime)
 	erro   = log.New(&logWriter{out: os.Stderr, color: colors.Red, prefix: "[ERRO]"}, "", log.Ltime)
-	ignore = log.New(ioutil.Discard, "", log.Ltime) // 默认情况下不显示此类信息，全部发送到 Discard
+	ignore = log.New(io.Discard, "", log.Ltime) // 默认情况下不显示此类信息，全部发送到 Discard
 )
 
 // 带色彩输出的控制台。
